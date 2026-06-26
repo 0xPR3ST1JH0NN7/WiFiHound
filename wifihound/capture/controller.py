@@ -51,17 +51,21 @@ class CaptureController:
         self._graph = WifiGraph()
         self._subscribers: set[asyncio.Queue] = set()
         self._index: dict = {}
+        self._handshakes = None
+        self._seen_handshakes: set[str] = set()
         self.running = False
         self.mode: Optional[str] = None
 
     # ----------------------------------------------------------- lifecycle
     async def start(self, source: Source, mode: str,
-                    interval: Optional[float] = None) -> None:
+                    interval: Optional[float] = None, handshakes=None) -> None:
         await self.stop()
         self._source = source
         self.mode = mode
         self._index = {}
         self._graph = WifiGraph()
+        self._handshakes = handshakes
+        self._seen_handshakes = set()
         if interval:
             self._interval = interval
         await source.start()
@@ -104,7 +108,21 @@ class CaptureController:
                         "summary": self._graph.stats(),
                         **patch,
                     })
+            await self._poll_handshakes()
             await asyncio.sleep(self._interval)
+
+    async def _poll_handshakes(self) -> None:
+        if not self._handshakes:
+            return
+        try:
+            found = self._handshakes.poll()
+        except Exception:
+            return
+        for bssid in found - self._seen_handshakes:
+            self._seen_handshakes.add(bssid)
+            node = self._graph.node(bssid)
+            essid = node.get("essid") if node else None
+            await self._broadcast({"type": "handshake", "bssid": bssid, "essid": essid})
 
     # --------------------------------------------------------- subscribers
     def subscribe(self) -> asyncio.Queue:

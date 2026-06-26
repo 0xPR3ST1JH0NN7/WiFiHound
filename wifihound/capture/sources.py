@@ -101,7 +101,8 @@ class AirodumpSource(Source):
         self._parser = AirodumpCsvParser()
 
     def build_command(self, prefix: str) -> list[str]:
-        cmd = ["airodump-ng", "--output-format", "csv", "-w", prefix]
+        # pcap is written alongside the CSV so handshakes can be detected.
+        cmd = ["airodump-ng", "--output-format", "pcap,csv", "-w", prefix]
         if self.channel:
             cmd += ["-c", str(self.channel)]
         if self.encrypt:
@@ -128,6 +129,13 @@ class AirodumpSource(Source):
         if not self._dir:
             return None
         files = sorted(glob.glob(os.path.join(self._dir, "cap-*.csv")))
+        return files[-1] if files else None
+
+    def latest_cap(self) -> Optional[str]:
+        """Newest pcap file, used for handshake detection."""
+        if not self._dir:
+            return None
+        files = sorted(glob.glob(os.path.join(self._dir, "cap-*.cap")))
         return files[-1] if files else None
 
     async def read(self) -> Optional[Scan]:

@@ -3,7 +3,7 @@ import pathlib
 
 from fastapi.testclient import TestClient
 
-from wifihound.capture import ReplaySource
+from wifihound.capture import ReplaySource, parse_handshakes
 from wifihound.capture.controller import CaptureController, diff_elements
 from wifihound.parsers.airodump_csv import AirodumpCsvParser
 from wifihound.server import create_app
@@ -62,6 +62,40 @@ def test_diff_elements():
     assert patch3["remove"] == ["a"]
 
 
+def test_parse_handshakes_threshold():
+    out = "\n".join(["DC:A6:32:11:22:33"] * 4 + ["B8:27:EB:AA:BB:CC"] * 2)
+    assert parse_handshakes(out, min_frames=4) == {"DC:A6:32:11:22:33"}
+    assert parse_handshakes(out, min_frames=2) == {
+        "DC:A6:32:11:22:33", "B8:27:EB:AA:BB:CC"}
+
+
+def test_controller_broadcasts_handshake():
+    scan = AirodumpCsvParser().parse(SAMPLE_TEXT, "s.csv")
+
+    class FakeWatcher:
+        def poll(self):
+            return {"DC:A6:32:11:22:33"}
+
+    ctrl = CaptureController(interval=0.02)
+    got = []
+
+    async def run():
+        q = ctrl.subscribe()
+        await ctrl.start(ReplaySource(scan, steps=2), mode="airodump",
+                         interval=0.02, handshakes=FakeWatcher())
+        for _ in range(12):
+            msg = await asyncio.wait_for(q.get(), timeout=2)
+            got.append(msg)
+            if msg["type"] == "handshake":
+                break
+        await ctrl.stop()
+
+    asyncio.run(run())
+    hs = [m for m in got if m["type"] == "handshake"]
+    assert hs and hs[0]["bssid"] == "DC:A6:32:11:22:33"
+    assert hs[0]["essid"] == "HomeNet"
+
+
 def test_controller_streams_patches():
     scan = AirodumpCsvParser().parse(SAMPLE_TEXT, "s.csv")
     ctrl = CaptureController(interval=0.02)
@@ -104,6 +138,16 @@ def test_replay_start_stop_status():
     assert c.get("/api/live/status").json()["running"] is True
     assert c.post("/api/live/stop").json()["status"] == "stopped"
     assert c.get("/api/live/status").json()["running"] is False
+
+
+def test_replay_interval_is_clamped():
+    c = client()
+    import_sample(c)
+    c.post("/api/live/start", json={"mode": "replay", "interval": 0.001})
+    try:
+        assert c.get("/api/live/status").json()["interval"] >= 0.2
+    finally:
+        c.post("/api/live/stop")
 
 
 def test_airodump_blocked_when_disabled():

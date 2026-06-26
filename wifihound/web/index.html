@@ -72,6 +72,10 @@
             <option value="airodump" disabled>airodump (live radio)</option>
           </select>
         </label>
+        <label class="filter-row">Interval (s)
+          <input id="live-interval" class="mini-input" type="number" min="0.2" max="10"
+                 step="0.1" value="1.2"/>
+        </label>
         <div id="live-airodump-opts" style="display:none">
           <label class="filter-row">Interface
             <input id="live-iface" class="mini-input" placeholder="wlan0mon"/>
