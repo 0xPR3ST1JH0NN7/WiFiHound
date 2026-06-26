@@ -1,4 +1,4 @@
-"""Parser package — importing it registers all built-in parsers."""
+"""Parser package. Importing it registers all built in parsers."""
 
 from wifihound.parsers.base import (  # noqa: F401
     Parser,

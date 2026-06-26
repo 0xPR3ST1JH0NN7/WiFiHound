@@ -49,6 +49,6 @@ def test_oui_enrichment():
     g, scan = build_graph()
     resolved = oui.enrich_scan(scan)
     assert resolved > 0
-    # DC:A6:32 -> Raspberry Pi in the built-in OUI table
+    # DC:A6:32 -> Raspberry Pi in the built in OUI table
     ap = next(a for a in scan.access_points if a.bssid == "DC:A6:32:11:22:33")
     assert ap.vendor == "Raspberry Pi"

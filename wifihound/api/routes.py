@@ -1,4 +1,4 @@
-"""REST API for WiFi-Hound."""
+"""REST API for WiFiHound."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ async def import_capture(file: UploadFile = File(...)):
             + ", ".join(p.name for p in parsers.all_parsers()),
         )
     scan = parser.parse(text, file.filename or "")
-    oui.enrich_scan(scan)  # vendors are cheap and offline — do it on import
+    oui.enrich_scan(scan)  # vendors are cheap and offline, so do it on import
     STATE.load(scan)
     return {
         "summary": STATE.stats(),

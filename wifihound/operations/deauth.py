@@ -1,8 +1,8 @@
 """Deauthentication operation via aireplay-ng (authorized testing only).
 
 This sends 802.11 deauth frames toward an AP (optionally targeting a single
-client). It is a standard, well-known technique used in *authorized* Wi-Fi
-penetration tests — for example to capture a WPA handshake for offline auditing
+client). It is a standard, well known technique used in *authorized* WiFi
+penetration tests, for example to capture a WPA handshake for offline auditing
 of a network you own or are contracted to assess.
 
 All guardrails in :mod:`wifihound.operations.base` apply.

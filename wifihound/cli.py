@@ -20,10 +20,10 @@ def _serve(args: argparse.Namespace) -> int:
 
     set_offensive_enabled(args.enable_offensive)
     if args.enable_offensive:
-        print("[!] OFFENSIVE OPERATIONS ENABLED — use only on authorized networks.")
+        print("[!] OFFENSIVE OPERATIONS ENABLED. Use only on authorized networks.")
 
     url = f"http://{args.host}:{args.port}"
-    print(f"[*] WiFi-Hound v{__version__} → {url}")
+    print(f"[*] WiFiHound v{__version__} -> {url}")
     if not args.no_browser:
         try:
             webbrowser.open(url)
@@ -39,10 +39,10 @@ def _serve(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="wifihound",
-        description="Interactive graph analysis for Wi-Fi recon data.",
+        description="Interactive graph analysis for WiFi recon data.",
     )
     parser.add_argument("--version", action="version",
-                        version=f"WiFi-Hound {__version__}")
+                        version=f"WiFiHound {__version__}")
     sub = parser.add_subparsers(dest="command")
 
     serve = sub.add_parser("serve", help="Start the local web app.")

@@ -1,9 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="WiFi-Hound logo">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="WiFiHound logo">
   <defs>
     <linearGradient id="wh-accent" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#22d3ee"/>
       <stop offset="0.55" stop-color="#34d399"/>
       <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="wh-hat" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fbbf24"/>
+      <stop offset="0.5" stop-color="#f97316"/>
+      <stop offset="1" stop-color="#ef4444"/>
     </linearGradient>
     <radialGradient id="wh-bg" cx="0.5" cy="0.42" r="0.65">
       <stop offset="0" stop-color="#13212b"/>
@@ -25,31 +30,55 @@
 
   <!-- Wi-Fi signal arcs broadcast forward from the snout -->
   <g fill="none" stroke="url(#wh-accent)" stroke-linecap="round" filter="url(#wh-glow)">
-    <path d="M168 104 a36 36 0 0 1 0 56" stroke-width="7" opacity="0.95"/>
-    <path d="M184 88 a60 60 0 0 1 0 88" stroke-width="7" opacity="0.58"/>
-    <path d="M200 72 a84 84 0 0 1 0 120" stroke-width="7" opacity="0.3"/>
+    <path d="M168 110 a34 34 0 0 1 0 52" stroke-width="7" opacity="0.95"/>
+    <path d="M184 95 a58 58 0 0 1 0 82" stroke-width="7" opacity="0.55"/>
+    <path d="M200 80 a82 82 0 0 1 0 112" stroke-width="7" opacity="0.28"/>
   </g>
 
   <!-- hound head in profile, snout pointing right toward the signal -->
   <g filter="url(#wh-glow)">
     <path fill="url(#wh-accent)" d="
-      M156 138
-      C 150 122, 142 110, 128 105
-      C 122 92, 114 82, 102 81
-      C 92 80, 84 86, 82 97
-      C 70 102, 61 122, 63 148
-      C 65 171, 77 186, 90 180
-      C 93 176, 93 163, 96 153
-      C 101 169, 113 180, 127 176
-      C 141 172, 150 159, 154 149
+      M156 144
+      C 150 128, 142 116, 128 111
+      C 122 100, 116 92, 106 91
+      C 96 90, 88 96, 86 106
+      C 72 110, 62 128, 64 152
+      C 66 174, 78 188, 90 183
+      C 93 179, 93 167, 96 158
+      C 101 173, 113 183, 127 179
+      C 141 175, 150 163, 154 154
       Z"/>
     <!-- ear shading: the signature droop -->
-    <path fill="#0a1016" opacity="0.22" d="
-      M82 99 C 70 105, 62 124, 64 148 C 66 169, 77 183, 90 178
-      C 84 161, 82 130, 89 106 C 88 101, 85 98, 82 99 Z"/>
+    <path fill="#0a1016" opacity="0.2" d="
+      M86 108 C 74 113, 66 131, 68 154 C 70 174, 80 187, 92 182
+      C 86 165, 84 136, 91 113 C 90 109, 89 107, 86 108 Z"/>
     <!-- nose -->
-    <circle cx="150" cy="137" r="6.5" fill="#0a1016"/>
-    <!-- eye (negative space) -->
-    <circle cx="112" cy="107" r="6.5" fill="#0a1016"/>
+    <circle cx="150" cy="143" r="6.5" fill="#0a1016"/>
+    <!-- eye -->
+    <circle cx="114" cy="116" r="6.5" fill="#0a1016"/>
+  </g>
+
+  <!-- deerstalker (detective) cap -->
+  <g filter="url(#wh-glow)">
+    <!-- front and back bills -->
+    <path fill="url(#wh-hat)" d="M58 84 C 44 86, 40 96, 52 100 C 70 96, 86 96, 96 98 C 92 86, 76 80, 58 84 Z"/>
+    <path fill="url(#wh-hat)" d="M118 86 C 138 82, 156 88, 160 98 C 150 100, 132 98, 116 100 C 112 92, 114 88, 118 86 Z"/>
+    <!-- crown -->
+    <path fill="url(#wh-hat)" d="
+      M60 92
+      C 58 64, 84 48, 108 54
+      C 128 59, 136 78, 126 96
+      C 110 90, 80 90, 60 92 Z"/>
+    <!-- hatband -->
+    <path fill="#b91c1c" opacity="0.9" d="M60 92 C 80 90, 110 90, 126 96 C 124 100, 120 102, 116 103 C 100 98, 80 98, 64 100 C 61 98, 60 95, 60 92 Z"/>
+    <!-- tweed check accents -->
+    <g stroke="#fde68a" stroke-width="1.4" opacity="0.5">
+      <line x1="78" y1="56" x2="74" y2="92"/>
+      <line x1="98" y1="53" x2="98" y2="92"/>
+      <line x1="116" y1="58" x2="118" y2="93"/>
+      <line x1="64" y1="74" x2="128" y2="78"/>
+    </g>
+    <!-- top button -->
+    <circle cx="100" cy="51" r="4.5" fill="#fde68a"/>
   </g>
 </svg>

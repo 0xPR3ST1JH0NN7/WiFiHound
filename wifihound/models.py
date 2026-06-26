@@ -1,6 +1,6 @@
-"""Core data model for WiFi-Hound.
+"""Core data model for WiFiHound.
 
-Two node types live in the graph: :class:`AccessPoint` (a Wi-Fi AP / BSSID) and
+Two node types live in the graph: :class:`AccessPoint` (a WiFi AP / BSSID) and
 :class:`Client` (a station / STA). A :class:`Scan` is the parsed result of one
 capture file and is what every parser returns.
 """

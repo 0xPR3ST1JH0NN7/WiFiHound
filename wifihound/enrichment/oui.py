@@ -1,7 +1,7 @@
 """OUI -> vendor resolution.
 
 The first 3 octets of a MAC (the OUI) identify the hardware vendor. We ship a
-small built-in table of common vendors so the tool works offline with zero
+small built in table of common vendors so the tool works offline with zero
 setup, and allow loading a fuller IEEE/Wireshark ``manuf`` file when available
 (``WIFIHOUND_OUI_FILE`` env var or :func:`load_oui_file`).
 """
@@ -95,7 +95,7 @@ _BUILTIN_OUI: dict[str, str] = {
     "A4:5E:60": "Apple",
 }
 
-# Loaded OUI map (built-in merged with any external file).
+# Loaded OUI map (built in, merged with any external file).
 _OUI: dict[str, str] = dict(_BUILTIN_OUI)
 
 

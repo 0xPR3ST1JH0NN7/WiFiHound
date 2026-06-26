@@ -1,4 +1,4 @@
-/* WiFi-Hound frontend — Cytoscape graph + interaction. */
+/* WiFiHound frontend: Cytoscape graph and interaction. */
 "use strict";
 
 const API = {
