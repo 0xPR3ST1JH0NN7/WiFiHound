@@ -38,12 +38,15 @@ const cy = cytoscape({
       selector: "node",
       style: {
         label: "data(label)",
-        color: "#cfe3ea",
+        color: "#dbeaf0",
         "font-size": 10,
         "text-valign": "bottom",
-        "text-margin-y": 4,
+        "text-margin-y": 5,
         "text-wrap": "ellipsis",
-        "text-max-width": 120,
+        "text-max-width": 130,
+        "text-outline-color": "#0a1016",
+        "text-outline-width": 2.5,
+        "min-zoomed-font-size": 6,
         "border-width": 2,
         "border-color": "#0a1016",
         width: 26,
@@ -93,18 +96,35 @@ const cy = cytoscape({
 let OFFENSIVE = false;
 let currentLayout = "fcose";
 
+// Cap how far `fit` may zoom in, so a small capture doesn't get blown up and
+// nodes/labels stay readable. Fits to visible elements only.
+const MAX_FIT_ZOOM = 1.1;
+function fitGraph() {
+  const visible = cy.elements(":visible");
+  cy.fit(visible.nonempty() ? visible : undefined, 60);
+  if (cy.zoom() > MAX_FIT_ZOOM) {
+    cy.zoom(MAX_FIT_ZOOM);
+    cy.center(visible.nonempty() ? visible : undefined);
+  }
+}
+
 function runLayout(name) {
   currentLayout = name || currentLayout;
   const opts =
     currentLayout === "fcose"
-      ? { name: "fcose", animate: true, animationDuration: 600, nodeRepulsion: 8000,
-          idealEdgeLength: 90, padding: 40 }
+      ? { name: "fcose", animate: true, animationDuration: 500, randomize: true,
+          packComponents: true, nodeRepulsion: 16000, idealEdgeLength: 130,
+          nodeSeparation: 150, gravity: 0.15, gravityRange: 3.8, fit: false,
+          padding: 60 }
       : currentLayout === "concentric"
-      ? { name: "concentric", concentric: (n) => n.degree(), levelWidth: () => 2, padding: 40 }
+      ? { name: "concentric", concentric: (n) => n.degree(), levelWidth: () => 2,
+          minNodeSpacing: 60, fit: false, padding: 60 }
       : currentLayout === "breadthfirst"
-      ? { name: "breadthfirst", directed: false, spacingFactor: 1.3, padding: 40 }
-      : { name: currentLayout, padding: 40 };
-  cy.layout(opts).run();
+      ? { name: "breadthfirst", directed: false, spacingFactor: 1.6, fit: false, padding: 60 }
+      : { name: currentLayout, fit: false, padding: 60 };
+  const layout = cy.layout(opts);
+  layout.one("layoutstop", fitGraph);
+  layout.run();
 }
 
 /* ----------------------------------------------------------------- render */
@@ -120,9 +140,8 @@ function renderGraph(payload) {
   cy.elements().remove();
   cy.add(nodes);
   cy.add(payload.elements.edges);
-  runLayout();
   applyFilters();
-  cy.fit(undefined, 50);
+  runLayout(); // fits (with zoom cap) once the layout settles
   document.getElementById("empty-state").classList.toggle("hidden", cy.nodes().length > 0);
   if (payload.summary) updateStats(payload.summary);
   populateFilterOptions();
@@ -245,14 +264,27 @@ function showDetails(info) {
       ${offBtn}
     </div>`;
 
-  document.getElementById("details").classList.remove("hidden");
+  const panel = document.getElementById("details");
+  const wasHidden = panel.classList.contains("hidden");
+  panel.classList.remove("hidden");
   document.getElementById("neighbors-btn").onclick = () => highlightNeighbors(info.id);
   const deauthBtn = document.getElementById("op-deauth-btn");
   if (deauthBtn) deauthBtn.onclick = () => openDeauthModal(info);
+
+  // The panel docks on the right and shrinks the graph area; reflow Cytoscape
+  // into the new size and, when it just opened, keep the node beside the panel.
+  requestAnimationFrame(() => {
+    cy.resize();
+    if (wasHidden) {
+      const node = cy.getElementById(info.id);
+      if (node.nonempty()) cy.animate({ center: { eles: node } }, { duration: 250 });
+    }
+  });
 }
 
 function closeDetails() {
   document.getElementById("details").classList.add("hidden");
+  requestAnimationFrame(() => cy.resize());
 }
 
 /* -------------------------------------------------------------- highlight */
@@ -444,7 +476,7 @@ document.getElementById("reset-btn").onclick = () => {
   document.querySelectorAll(".filter input").forEach((c) => (c.checked = true));
   document.getElementById("filter-enc").value = "";
   document.getElementById("filter-chan").value = "";
-  cy.fit(undefined, 50);
+  fitGraph();
 };
 
 document.getElementById("details-close").onclick = closeDetails;
