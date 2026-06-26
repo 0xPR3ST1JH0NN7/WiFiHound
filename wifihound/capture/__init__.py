@@ -1,6 +1,7 @@
 """Live capture: stream a scan into the graph in real time."""
 
 from wifihound.capture.controller import CaptureController, diff_elements
+from wifihound.capture.handshake import HandshakeWatcher, parse_handshakes
 from wifihound.capture.sources import AirodumpSource, ReplaySource, Source
 
 __all__ = [
@@ -9,4 +10,6 @@ __all__ = [
     "Source",
     "ReplaySource",
     "AirodumpSource",
+    "HandshakeWatcher",
+    "parse_handshakes",
 ]

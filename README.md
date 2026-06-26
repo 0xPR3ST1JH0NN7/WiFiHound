@@ -40,7 +40,11 @@ Click **Import capture** and pick an `airodump-ng` CSV
 - **Replay**: import a CSV, then *Start live* to reveal it node by node. No privileges needed.
 - **airodump**: stream a real capture. Choose interface, channel, protocol
   (WEP / WPA2 / WPA3 / Open), WPS, and an optional ESSID or BSSID filter.
-  Requires `--enable-offensive`, root, and a monitor mode interface.
+  Requires `--enable-offensive`, root, and a monitor mode interface. WPA
+  handshakes captured during the session (e.g. from a deauth) are flagged on
+  the AP with a 🔑.
+
+The reveal / poll speed is set by the *Interval* field.
 
 ## Offensive operations
 

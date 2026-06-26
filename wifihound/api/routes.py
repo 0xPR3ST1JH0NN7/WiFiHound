@@ -13,7 +13,12 @@ from fastapi import (
 from pydantic import BaseModel
 
 from wifihound import parsers
-from wifihound.capture import AirodumpSource, CaptureController, ReplaySource
+from wifihound.capture import (
+    AirodumpSource,
+    CaptureController,
+    HandshakeWatcher,
+    ReplaySource,
+)
 from wifihound.enrichment import oui
 from wifihound.graph import WifiGraph
 from wifihound.operations import OperationError, deauth as deauth_op, offensive_enabled
@@ -155,6 +160,8 @@ class LiveStartRequest(BaseModel):
 
 @router.post("/live/start")
 async def live_start(req: LiveStartRequest):
+    # Clamp the poll/reveal interval to a sane range (seconds).
+    interval = max(0.2, min(req.interval or 1.5, 10.0))
     if req.mode == "replay":
         # Re-feed the currently loaded capture as if it were being discovered.
         if STATE.scan is None:
@@ -177,10 +184,15 @@ async def live_start(req: LiveStartRequest):
             req.interface, channel=req.channel, encrypt=req.encrypt,
             wps=req.wps, essid=req.essid, bssid=req.bssid,
         )
+        # Watch the live pcap for WPA handshakes (e.g. captured during a deauth).
+        handshakes = HandshakeWatcher(source)
+        await CAPTURE.start(source, mode=req.mode,
+                            interval=interval, handshakes=handshakes)
+        return {"status": "running", "mode": req.mode, "channel": req.channel}
     else:
         raise HTTPException(status_code=400, detail=f"Unknown mode '{req.mode}'.")
 
-    await CAPTURE.start(source, mode=req.mode, interval=req.interval or 1.5)
+    await CAPTURE.start(source, mode=req.mode, interval=interval)
     return {"status": "running", "mode": req.mode, "channel": req.channel}
 
 

@@ -97,6 +97,11 @@ const cy = cytoscape({
       style: { "border-color": "#fbbf24", "border-width": 5,
                "border-opacity": 1, "background-blacken": -0.1 },
     },
+    {
+      selector: "node.has-handshake",
+      style: { "border-color": "#fbbf24", "border-width": 5,
+               label: "data(hsLabel)", "font-weight": "bold" },
+    },
     { selector: ".hidden-node", style: { display: "none" } },
     {
       selector: "node:selected",
@@ -582,9 +587,21 @@ function handleLiveMessage(msg) {
     }
   } else if (msg.type === "patch") {
     applyPatch(msg);
+  } else if (msg.type === "handshake") {
+    markHandshake(msg);
   } else if (msg.type === "stopped") {
     setLiveUI(false);
   }
+}
+
+function markHandshake(msg) {
+  const node = cy.getElementById(msg.bssid);
+  const name = msg.essid || msg.bssid;
+  if (node.nonempty()) {
+    node.data("hsLabel", "🔑 " + (node.data("label") || msg.bssid));
+    node.addClass("has-handshake");
+  }
+  toast(`WPA handshake captured: ${name}`, "ok");
 }
 
 function openLiveSocket() {
@@ -599,7 +616,8 @@ function openLiveSocket() {
 
 async function startLive() {
   const mode = document.getElementById("live-mode").value;
-  const payload = { mode, interval: 1.2 };
+  const interval = Number(document.getElementById("live-interval").value) || 1.2;
+  const payload = { mode, interval };
   let channel = null;
   if (mode === "airodump") {
     const iface = document.getElementById("live-iface").value.trim();
