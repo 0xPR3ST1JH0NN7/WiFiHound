@@ -62,12 +62,6 @@ action, with capped bursts and logging.
 > ⚠️ Use only on networks you own or are explicitly authorized to test.
 > Unauthorized deauthentication is illegal in most jurisdictions.
 
-## Tests
-
-```bash
-pytest
-```
-
 ## Authors
 
 - [@0xPR3ST1JH0NN7](https://github.com/0xPR3ST1JH0NN7)
