@@ -15,7 +15,7 @@ WEB_DIR = Path(__file__).parent / "web"
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="WiFi-Hound", version=__version__)
+    app = FastAPI(title="WiFiHound", version=__version__)
     app.include_router(router)
 
     app.mount(

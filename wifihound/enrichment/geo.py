@@ -1,9 +1,9 @@
 """Geolocation enrichment hooks.
 
 airodump CSV carries no coordinates, so this is a deliberately small, offline
-placeholder that other sources (GPS-tagged Kismet captures, WiGLE exports, a
+placeholder that other sources (GPS tagged Kismet captures, WiGLE exports, a
 local lookup service) can plug into later. It never performs network calls on
-its own — wire a provider in via :func:`set_provider`.
+its own. Wire a provider in via :func:`set_provider`.
 """
 
 from __future__ import annotations
