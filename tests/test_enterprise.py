@@ -216,6 +216,34 @@ def test_eap_route_dry_run(monkeypatch):
     assert res.json()["command"][0] == "EAP_buster.sh"
 
 
+def test_cert_upload_route(monkeypatch):
+    from wifihound.api import routes
+    seen = {}
+
+    def fake(cap_path, ap_bssid=None, **kw):
+        seen["bssid"] = ap_bssid
+        seen["existed"] = os.path.isfile(cap_path)  # temp file present during call
+        seen["path"] = cap_path
+        return {"status": "ok", "backend": "tshark", "command": [], "returncode": 0,
+                "certificates": [{"subject": "CN=radius", "issuer": "CN=ca",
+                                  "not_before": "2026-01-01", "not_after": "2027-01-01",
+                                  "serial": "a1"}]}
+
+    monkeypatch.setattr(routes.enterprise, "extract_radius_cert", fake)
+    res = client().post(
+        "/api/operations/enterprise/cert/upload",
+        files={"file": ("scan.cap", b"\x00\x01\x02", "application/octet-stream")},
+        data={"ap_bssid": "AA:BB:CC:00:11:22"})
+    assert res.status_code == 200 and res.json()["status"] == "ok"
+    assert seen["bssid"] == "AA:BB:CC:00:11:22"
+    assert seen["existed"] is True
+    assert not os.path.isfile(seen["path"])  # temp upload cleaned up afterwards
+
+
+def test_cert_upload_requires_file():
+    assert client().post("/api/operations/enterprise/cert/upload").status_code == 422
+
+
 def test_eap_route_single_flight(monkeypatch):
     from wifihound.api import routes
     routes._EAP_LOCK.acquire()
