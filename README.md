@@ -21,18 +21,37 @@ map build in real time, deauth included.
 
 ## Install
 
+WiFiHound needs **Python 3.8+** (FastAPI does not run on Python 2). Always use
+`python3` / `pip3` — on systems where a legacy Python 2 is still the default
+`python`, a bare `pip install` targets Python 2.7 and fails with
+`No matching distribution found for fastapi`.
+
 ```bash
 git clone https://github.com/0xPR3ST1JH0NN7/WiFiHound
 cd WiFiHound
-pip install -r requirements.txt
+python3 -m venv .venv            # recommended: keep deps off the system Python
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt  # inside the venv, pip is Python 3's pip
 ```
+
+Prefer not to use a virtualenv? Install straight into Python 3 instead:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+> Check what your `pip` targets with `pip --version`: the trailing
+> `(python 3.x)` must be 3.8 or newer. If it says `(python 2.7)`, use
+> `pip3` / `python3 -m pip` as shown above.
 
 ## Usage
 
 ```bash
-python -m wifihound                  # opens http://127.0.0.1:8000
-sudo python -m wifihound             # also unlocks live radio capture + deauth
+python3 -m wifihound                 # opens http://127.0.0.1:8000
+sudo python3 -m wifihound            # also unlocks live radio capture + deauth
 ```
+
+(Inside an activated virtualenv you can just use `python -m wifihound`.)
 
 There is one way to run it. Offline analysis and replay work unprivileged;
 live radio capture and deauth turn on automatically when you start it with
