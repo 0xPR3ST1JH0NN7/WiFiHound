@@ -17,7 +17,7 @@ import shutil
 import subprocess
 from typing import Optional
 
-from wifihound.models import normalize_mac
+from WiFiHound.models import normalize_mac
 
 # A complete 4-way handshake is 4 EAPOL frames; default threshold is lenient
 # enough to also flag a captured handshake when a frame or two is missed.

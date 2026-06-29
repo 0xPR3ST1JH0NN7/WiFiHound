@@ -76,9 +76,25 @@ def _dist_present(dist: str) -> bool:
 
 
 def _resolve(tool: Tool) -> str | None:
-    """Absolute path to the tool, honouring any env override, or None."""
-    name = os.environ.get(tool.env, tool.name) if tool.env else tool.name
-    return shutil.which(name)
+    """Absolute path to the tool, honouring any env override, or None.
+
+    An env override that gives an explicit path is expanded (``~`` and
+    ``$VARS``) and accepted if the file simply exists, even without the
+    executable bit, so a configured-but-not-``chmod +x`` script still shows as
+    present in the checklist.
+    """
+    name = tool.name
+    if tool.env:
+        override = os.environ.get(tool.env)
+        if override:
+            name = os.path.expanduser(os.path.expandvars(override))
+    found = shutil.which(name)
+    if found:
+        return found
+    if (os.sep in name or name.startswith("~")) and os.path.isfile(
+            os.path.expanduser(name)):
+        return os.path.expanduser(name)
+    return None
 
 
 def _line(name: str, width: int, present: bool, required: bool, note: str = "") -> None:

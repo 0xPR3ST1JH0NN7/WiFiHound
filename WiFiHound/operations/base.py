@@ -20,7 +20,7 @@ import logging
 import os
 import shutil
 
-logger = logging.getLogger("wifihound.operations")
+logger = logging.getLogger("WiFiHound.operations")
 
 
 class OperationError(RuntimeError):

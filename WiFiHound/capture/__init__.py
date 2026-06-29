@@ -1,8 +1,8 @@
 """Live capture: stream a scan into the graph in real time."""
 
-from wifihound.capture.controller import CaptureController, diff_elements
-from wifihound.capture.handshake import HandshakeWatcher, parse_handshakes
-from wifihound.capture.interfaces import (
+from WiFiHound.capture.controller import CaptureController, diff_elements
+from WiFiHound.capture.handshake import HandshakeWatcher, parse_handshakes
+from WiFiHound.capture.interfaces import (
     MonitorHandle,
     ensure_monitor_mode,
     interface_exists,
@@ -11,7 +11,7 @@ from wifihound.capture.interfaces import (
     list_wireless_interfaces,
     restore_managed_mode,
 )
-from wifihound.capture.sources import AirodumpSource, ReplaySource, Source
+from WiFiHound.capture.sources import AirodumpSource, ReplaySource, Source
 
 __all__ = [
     "CaptureController",

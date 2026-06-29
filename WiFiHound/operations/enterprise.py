@@ -31,14 +31,14 @@ import re
 import shutil
 import subprocess
 
-from wifihound.models import normalize_mac
-from wifihound.operations.base import (
+from WiFiHound.models import normalize_mac
+from WiFiHound.operations.base import (
     OperationError,
     require_authorization,
     require_tools,
 )
 
-logger = logging.getLogger("wifihound.operations.enterprise")
+logger = logging.getLogger("WiFiHound.operations.enterprise")
 
 try:  # certificate decoding needs `cryptography`; degrade clearly if absent
     from cryptography import x509
@@ -291,7 +291,8 @@ def enumerate_eap_methods(interface: str, essid: str, identity: str,
 
     # Positional order is fixed: <ESSID> <IDENTITY> <INTERFACE>.
     cmd = [script_path, essid, identity, interface]
-    logger.warning("EAP enumeration requested: %s", " ".join(cmd))
+    # Audit at INFO so it stays off the default terminal (shown with --debug).
+    logger.info("EAP enumeration requested: %s", " ".join(cmd))
     if dry_run:
         return {"status": "dry-run", "command": cmd}
 

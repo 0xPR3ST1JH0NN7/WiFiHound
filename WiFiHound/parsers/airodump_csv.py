@@ -18,8 +18,8 @@ from __future__ import annotations
 import csv
 import io
 
-from wifihound.models import AccessPoint, Client, Scan, normalize_mac
-from wifihound.parsers.base import Parser, register
+from WiFiHound.models import AccessPoint, Client, Scan, normalize_mac
+from WiFiHound.parsers.base import Parser, register
 
 
 def _to_int(value: str):

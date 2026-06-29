@@ -9,8 +9,8 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from wifihound import __version__
-from wifihound.api import router
+from WiFiHound import __version__
+from WiFiHound.api import router
 
 WEB_DIR = Path(__file__).parent / "web"
 
@@ -18,12 +18,20 @@ WEB_DIR = Path(__file__).parent / "web"
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     yield
-    # Graceful shutdown (Ctrl+C or the /api/shutdown route): stop any live
+    # Graceful shutdown (Enter / Ctrl+C / the /api/shutdown route): stop any live
     # capture so airodump-ng is killed and the interface is restored to managed
-    # mode instead of being left in monitor mode.
+    # mode, then restart NetworkManager so normal Wi-Fi resumes.
+    import asyncio
+
     try:
-        from wifihound.api.routes import CAPTURE
+        from WiFiHound.api.routes import CAPTURE
         await CAPTURE.stop()
+    except Exception:
+        pass
+    try:
+        from WiFiHound.capture.interfaces import restart_network_services
+        await asyncio.get_event_loop().run_in_executor(
+            None, restart_network_services)
     except Exception:
         pass
 
