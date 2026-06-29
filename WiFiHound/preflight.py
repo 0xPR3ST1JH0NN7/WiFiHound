@@ -61,9 +61,6 @@ TOOLS: list[Tool] = [
          install="apt install aircrack-ng"),
     Tool("tshark", "handshake detection + RADIUS cert extraction", required=True,
          install="apt install tshark"),
-    Tool("EAP_buster.sh", "EAP method enumeration script", required=False,
-         install="https://github.com/blackarrowsec/EAP_buster",
-         env="WIFIHOUND_EAP_BUSTER"),
 ]
 
 
