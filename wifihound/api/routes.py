@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import signal
 import tempfile
 import threading
 
@@ -117,6 +118,24 @@ def clear_state():
     """Drop the loaded capture so a reload or an explicit Clear starts fresh."""
     STATE.clear()
     return {"status": "cleared", "summary": STATE.stats()}
+
+
+# --------------------------------------------------------------- server control
+@router.post("/shutdown")
+def shutdown_server():
+    """Stop the server gracefully, so there is no need to Ctrl+C the terminal.
+
+    A SIGTERM is scheduled just after this response is sent; uvicorn handles it
+    as a clean shutdown (running the app's shutdown hook, which stops any live
+    capture and restores the wireless interface to managed mode). Reachable from
+    the CLI with ``python -m wifihound stop``.
+    """
+    def _terminate() -> None:
+        os.kill(os.getpid(), signal.SIGTERM)
+
+    # Fire just after the HTTP response flushes, so the caller gets an ack first.
+    threading.Timer(0.4, _terminate).start()
+    return {"status": "stopping"}
 
 
 # ------------------------------------------------------------------ offensive

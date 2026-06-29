@@ -309,14 +309,11 @@ function showDetails(info) {
   // pointless on a static import or replay — only offer them during a live
   // airodump session (deauth additionally needs a fixed channel).
   const liveActive = live.running && live.mode === "airodump";
-  // Offer deauth during any live airodump capture (the modal explains, and
-  // gates on, the fixed-channel requirement). A client can only be deauthed
-  // off the AP it is associated with.
   let offBtn = "";
-  if (liveActive && isAp) {
+  if (live.canDeauth && isAp) {
     offBtn = `<button class="btn danger" id="op-deauth-btn">Deauth this AP…</button>`;
-  } else if (liveActive && clientAssociated) {
-    offBtn = `<button class="btn danger" id="op-deauth-btn">Deauth this client…</button>`;
+  } else if (live.canDeauth && clientAssociated) {
+    offBtn = `<button class="btn danger" id="op-deauth-btn">Deauth from AP…</button>`;
   }
 
   // Enterprise (802.1X) badge is informational; its actions need a live capture.

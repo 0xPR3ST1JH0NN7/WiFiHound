@@ -1,9 +1,13 @@
 """Command-line entry point.
 
-There is a single way to run WiFiHound:
+Run WiFiHound:
 
     python -m wifihound            # or: python -m wifihound serve
     sudo python -m wifihound       # unlocks live radio capture + deauth
+
+Stop a running server gracefully from another terminal (no Ctrl+C needed):
+
+    python -m wifihound stop       # add --port if you changed it
 
 Offensive / live-radio features are enabled automatically when the process runs
 as root, so just use ``sudo`` when you need them. No special flags.
@@ -63,6 +67,8 @@ def _serve(args: argparse.Namespace) -> int:
 
     url = f"http://{args.host}:{args.port}"
     print(_paint(f"[*] listening on {url}", _DIM))
+    print(_paint(f"[*] stop it any time with: python -m wifihound stop"
+                 + ("" if args.port == 8000 else f" --port {args.port}"), _DIM))
     if args.debug:
         print(_paint("[*] debug mode: verbose request logging enabled.", _DIM))
 
@@ -81,7 +87,28 @@ def _serve(args: argparse.Namespace) -> int:
         reload=args.reload,
         log_level="debug" if args.debug else "warning",
         access_log=args.debug,
+        # Don't hang on a lingering live-capture WebSocket when shutting down.
+        timeout_graceful_shutdown=5,
     )
+    return 0
+
+
+def _stop(args: argparse.Namespace) -> int:
+    """Ask a running WiFiHound server to shut down gracefully (no Ctrl+C)."""
+    import urllib.request
+
+    url = f"http://{args.host}:{args.port}/api/shutdown"
+    # Talk straight to the local server; never route this through an HTTP proxy.
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    try:
+        req = urllib.request.Request(url, data=b"", method="POST")
+        with opener.open(req, timeout=5) as resp:
+            resp.read()
+    except Exception as exc:
+        print(f"[!] no running WiFiHound server at {args.host}:{args.port} ({exc})",
+              file=sys.stderr)
+        return 1
+    print(_paint(f"[*] shutdown requested; {args.host}:{args.port} is stopping.", _DIM))
     return 0
 
 
@@ -109,6 +136,12 @@ def build_parser() -> argparse.ArgumentParser:
     serve = sub.add_parser("serve", help="Start the local web app (default).")
     _add_serve_flags(serve)
     serve.set_defaults(func=_serve)
+
+    stop = sub.add_parser(
+        "stop", help="Tell a running server to shut down gracefully (no Ctrl+C).")
+    stop.add_argument("--host", default="127.0.0.1")
+    stop.add_argument("--port", type=int, default=8000)
+    stop.set_defaults(func=_stop)
 
     parser.set_defaults(func=_serve)  # serve is the default action
     return parser
