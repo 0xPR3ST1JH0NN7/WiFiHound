@@ -476,8 +476,7 @@ function openDeauthModal(info) {
     <p>Target ${target}</p>
     <p class="hint">${capLine}</p>
     <label>Deauth bursts (1 to 64, 0 = continuous not allowed)</label>
-    <input id="op-count" type="number" min="1" max="64" value="5"/>
-    <label><input type="checkbox" id="op-dry"/> Dry run (build command only)</label>`;
+    <input id="op-count" type="number" min="1" max="64" value="5"/>`;
   const confirm = document.getElementById("op-confirm");
   confirm.textContent = "Confirm";
   confirm.classList.add("danger");
@@ -522,16 +521,18 @@ async function confirmDeauth() {
     client: pendingOp.client || null,
     count: Number(document.getElementById("op-count").value) || 5,
     acknowledged: true,
-    dry_run: document.getElementById("op-dry").checked,
+    dry_run: false,
   };
+  // Close the dialog right away: the deauth runs server-side and can take a
+  // moment, so don't leave the user staring at a frozen modal.
+  document.getElementById("op-modal").classList.add("hidden");
+  pendingOp = null;
+  toast("Sending deauth…");
   try {
     const res = await API.deauth(payload);
-    toast(`Deauth ${res.status}: ${res.command.join(" ")}`, "ok");
+    toast(`Deauth ${res.status}`, res.status === "ok" ? "ok" : "error");
   } catch (e) {
     toast(e.message, "error");
-  } finally {
-    document.getElementById("op-modal").classList.add("hidden");
-    pendingOp = null;
   }
 }
 

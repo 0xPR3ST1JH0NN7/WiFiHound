@@ -1,6 +1,6 @@
 """Live capture sources.
 
-A *source* yields successive :class:`~wifihound.models.Scan` snapshots. The
+A *source* yields successive :class:`~WiFiHound.models.Scan` snapshots. The
 :class:`CaptureController` polls a source and streams the resulting graph diffs
 to the browser.
 
@@ -26,9 +26,9 @@ import tempfile
 import time
 from typing import Optional
 
-from wifihound.capture.interfaces import MonitorHandle, restore_managed_mode
-from wifihound.models import Scan
-from wifihound.parsers.airodump_csv import AirodumpCsvParser
+from WiFiHound.capture.interfaces import MonitorHandle, restore_managed_mode
+from WiFiHound.models import Scan
+from WiFiHound.parsers.airodump_csv import AirodumpCsvParser
 
 
 class Source:
@@ -144,7 +144,7 @@ class AirodumpSource(Source):
             self._dir = tempfile.mkdtemp(
                 prefix="capture-" + time.strftime("%Y%m%d-%H%M%S") + "-", dir=base)
         else:
-            self._dir = tempfile.mkdtemp(prefix="wifihound-cap-")
+            self._dir = tempfile.mkdtemp(prefix="WiFiHound-cap-")
         prefix = os.path.join(self._dir, "cap")
         # airodump-ng runs until terminated; it rewrites cap-01.csv ~once/sec.
         self._proc = subprocess.Popen(

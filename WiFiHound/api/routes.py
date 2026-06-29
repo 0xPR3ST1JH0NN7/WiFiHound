@@ -18,8 +18,8 @@ from fastapi import (
 )
 from pydantic import BaseModel
 
-from wifihound import parsers
-from wifihound.capture import (
+from WiFiHound import parsers
+from WiFiHound.capture import (
     AirodumpSource,
     CaptureController,
     HandshakeWatcher,
@@ -28,15 +28,15 @@ from wifihound.capture import (
     interface_exists,
     list_wireless_interfaces,
 )
-from wifihound.enrichment import oui
-from wifihound.graph import WifiGraph
-from wifihound.operations import (
+from WiFiHound.enrichment import oui
+from WiFiHound.graph import WifiGraph
+from WiFiHound.operations import (
     OperationError,
     deauth as deauth_op,
     enterprise,
     offensive_available,
 )
-from wifihound.operations.base import (
+from WiFiHound.operations.base import (
     OperationError as _OpError,
     OperationNotAuthorized,
     require_authorization,
@@ -128,7 +128,7 @@ def shutdown_server():
     A SIGTERM is scheduled just after this response is sent; uvicorn handles it
     as a clean shutdown (running the app's shutdown hook, which stops any live
     capture and restores the wireless interface to managed mode). Reachable from
-    the CLI with ``python -m wifihound stop``.
+    the CLI with ``python -m WiFiHound stop``.
     """
     def _terminate() -> None:
         os.kill(os.getpid(), signal.SIGTERM)
@@ -218,7 +218,7 @@ async def operations_enterprise_cert_upload(
     """
     raw = await file.read()
     suffix = os.path.splitext(file.filename or "")[1] or ".cap"
-    fd, path = tempfile.mkstemp(prefix="wifihound-up-", suffix=suffix)
+    fd, path = tempfile.mkstemp(prefix="WiFiHound-up-", suffix=suffix)
     try:
         with os.fdopen(fd, "wb") as fh:
             fh.write(raw)

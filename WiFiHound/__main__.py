@@ -1,4 +1,4 @@
-from wifihound.cli import main
+from WiFiHound.cli import main
 
 if __name__ == "__main__":
     raise SystemExit(main())

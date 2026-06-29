@@ -5,7 +5,7 @@ client). It is a standard, well known technique used in *authorized* WiFi
 penetration tests, for example to capture a WPA handshake for offline auditing
 of a network you own or are contracted to assess.
 
-All guardrails in :mod:`wifihound.operations.base` apply.
+All guardrails in :mod:`WiFiHound.operations.base` apply.
 """
 
 from __future__ import annotations
@@ -13,14 +13,14 @@ from __future__ import annotations
 import logging
 import subprocess
 
-from wifihound.models import normalize_mac
-from wifihound.operations.base import (
+from WiFiHound.models import normalize_mac
+from WiFiHound.operations.base import (
     OperationError,
     require_authorization,
     require_tools,
 )
 
-logger = logging.getLogger("wifihound.operations.deauth")
+logger = logging.getLogger("WiFiHound.operations.deauth")
 
 # Cap the burst so a single API call can never become a sustained flood.
 MAX_COUNT = 64
@@ -60,7 +60,8 @@ def deauth(
         cmd += ["-c", target_client]
     cmd.append(interface)
 
-    logger.warning("Deauth requested: %s", " ".join(cmd))
+    # Audit at INFO so it stays off the default terminal (shown with --debug).
+    logger.info("Deauth requested: %s", " ".join(cmd))
 
     if dry_run:
         return {"status": "dry-run", "command": cmd}

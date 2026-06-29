@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="wifihound/web/static/img/logo-wordmark.png" alt="WiFiHound" width="440"/>
+  <img src="WiFiHound/web/static/img/logo-wordmark.png" alt="WiFiHound" width="440"/>
 </div>
 
 WiFiHound turns `airodump-ng` output into an explorable graph of access points,
@@ -35,7 +35,7 @@ missing**:
 
 | Tool | Used for | Required |
 | --- | --- | --- |
-| `aircrack-ng`, `airmon-ng`, `airodump-ng`, `aireplay-ng` | the aircrack-ng suite — live capture, monitor mode, deauth | ✅ |
+| `aircrack-ng`, `airmon-ng`, `airodump-ng`, `aireplay-ng` | the aircrack-ng suite (live capture, monitor mode, deauth) | ✅ |
 | `tshark` | handshake detection + RADIUS certificate extraction | ✅ |
 | `EAP_buster.sh` | EAP method enumeration (path via `WIFIHOUND_EAP_BUSTER`) | optional |
 
@@ -49,10 +49,13 @@ replaying captures needs no external tools).
 ## Run
 
 ```bash
-python3 -m wifihound        # opens http://127.0.0.1:8000
-sudo python3 -m wifihound   # also enables live radio capture
-python3 -m wifihound stop   # stop a running server gracefully (no Ctrl+C)
+python3 -m WiFiHound        # opens http://127.0.0.1:8000
+sudo python3 -m WiFiHound   # also enables live radio capture
 ```
+
+To stop the server, press **Enter** (or Ctrl+C) in the terminal where it runs.
+NetworkManager is restarted automatically on exit, so normal Wi-Fi resumes after
+a live capture.
 
 Click **Import capture** and pick an `airodump-ng` CSV
 (`airodump-ng -w scan --output-format csv wlan0mon`).
@@ -104,10 +107,21 @@ PEAP-MSCHAPv2, TTLS-PAP, …) the network accepts. It needs root, a legitimate E
 identity (e.g. `DOMAIN\user`) and a free interface (the script switches it to
 managed mode itself), and runs for several minutes.
 
-`EAP_buster.sh` is not bundled — put it on your `PATH`, or point WiFiHound at it:
+`EAP_buster.sh` is not bundled. Put it on your `PATH`, or point WiFiHound at it
+with the `WIFIHOUND_EAP_BUSTER` environment variable:
 
 ```bash
-export WIFIHOUND_EAP_BUSTER=/path/to/EAP_buster.sh
+export WIFIHOUND_EAP_BUSTER=/opt/EAP_buster/EAP_buster.sh
+```
+
+Because EAP enumeration needs root, remember that `sudo` does not pass your shell
+environment through by default. Either preserve it with `sudo -E`, or set the
+variable inline:
+
+```bash
+sudo -E python3 -m WiFiHound
+# or
+sudo WIFIHOUND_EAP_BUSTER=/opt/EAP_buster/EAP_buster.sh python3 -m WiFiHound
 ```
 
 ## Authors

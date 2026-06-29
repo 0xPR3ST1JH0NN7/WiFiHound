@@ -1,6 +1,6 @@
 """Parser interface and registry.
 
-A parser turns raw capture bytes/text into a :class:`~wifihound.models.Scan`.
+A parser turns raw capture bytes/text into a :class:`~WiFiHound.models.Scan`.
 New formats (Kismet netxml, pcap, JSON ...) only need to subclass :class:`Parser`
 and register themselves via :func:`register`.
 """
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Callable, Optional
 
-from wifihound.models import Scan
+from WiFiHound.models import Scan
 
 
 class Parser:

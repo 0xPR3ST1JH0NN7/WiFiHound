@@ -17,13 +17,17 @@ import subprocess
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-from wifihound.operations.base import (
+from WiFiHound.operations.base import (
     OperationError,
     require_authorization,
     require_tools,
 )
 
 SYSFS_NET = "/sys/class/net"
+
+# Tracks whether we ran `airmon-ng check kill` this session, so shutdown can
+# restart NetworkManager only when we are the ones who stopped it.
+_killed_services = {"value": False}
 
 # Values reported by /sys/class/net/<iface>/type (Linux ARPHRD_* constants).
 ARPHRD_ETHER = 1                  # managed-mode Wi-Fi presents as ethernet
@@ -145,7 +149,7 @@ def ensure_monitor_mode(iface: str, acknowledged: bool = True,
     ``wlan0mon``). An interface already in monitor mode is returned untouched
     and is not restored afterwards, since we did not change it.
 
-    Raises :class:`~wifihound.operations.base.OperationError` (or its
+    Raises :class:`~WiFiHound.operations.base.OperationError` (or its
     :class:`OperationNotAuthorized` subclass) if the interface is missing, the
     privilege/tool guardrails fail, or airmon-ng does not produce a usable
     monitor interface.
@@ -164,6 +168,7 @@ def ensure_monitor_mode(iface: str, acknowledged: bool = True,
     if kill_interferers:
         try:
             run(["airmon-ng", "check", "kill"])
+            _killed_services["value"] = True
         except Exception:
             pass
 
@@ -218,3 +223,27 @@ def restore_managed_mode(handle: Optional[MonitorHandle], run: Runner = _run) ->
         run(["airmon-ng", "stop", handle.interface])
     except Exception:
         pass
+
+
+def restart_network_services(run: Runner = _run) -> None:
+    """Restart NetworkManager after a monitor-mode session, on shutdown.
+
+    ``airmon-ng check kill`` stops NetworkManager (and wpa_supplicant) so monitor
+    mode sticks; without bringing it back, normal Wi-Fi stays down after the app
+    exits. Best-effort: only runs when we actually killed the services and we are
+    root, tries ``systemctl`` then the SysV ``service`` fallback, and never
+    raises (it sits on a shutdown path).
+    """
+    if not _killed_services["value"]:
+        return
+    if not (hasattr(os, "geteuid") and os.geteuid() == 0):
+        return
+    for cmd in (["systemctl", "restart", "NetworkManager"],
+                ["service", "NetworkManager", "restart"]):
+        try:
+            proc = run(cmd)
+            if getattr(proc, "returncode", 1) == 0:
+                break
+        except Exception:
+            continue
+    _killed_services["value"] = False

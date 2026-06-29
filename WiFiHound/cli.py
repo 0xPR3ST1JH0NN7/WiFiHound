@@ -2,12 +2,12 @@
 
 Run WiFiHound:
 
-    python -m wifihound            # or: python -m wifihound serve
-    sudo python -m wifihound       # unlocks live radio capture + deauth
+    python -m WiFiHound            # or: python -m WiFiHound serve
+    sudo python -m WiFiHound       # unlocks live radio capture + deauth
 
 Stop a running server gracefully from another terminal (no Ctrl+C needed):
 
-    python -m wifihound stop       # add --port if you changed it
+    python -m WiFiHound stop       # add --port if you changed it
 
 Offensive / live-radio features are enabled automatically when the process runs
 as root, so just use ``sudo`` when you need them. No special flags.
@@ -19,12 +19,15 @@ to see verbose request and framework logs.
 from __future__ import annotations
 
 import argparse
+import os
+import signal
 import sys
+import threading
 import webbrowser
 from pathlib import Path
 
-from wifihound import __version__, preflight
-from wifihound.operations.base import offensive_available
+from WiFiHound import __version__, preflight
+from WiFiHound.operations.base import offensive_available
 
 # ANSI colors, used only when writing to a real terminal.
 _RED = "\033[91m"
@@ -46,6 +49,26 @@ def _banner() -> str:
 def print_banner() -> None:
     sys.stdout.write(_paint(_banner(), _RED))
     sys.stdout.write(_paint(f"  WiFi recon, mapped.  v{__version__}\n\n", _DIM))
+
+
+def _install_stdin_quit() -> None:
+    """Stop the server when Enter (or EOF / Ctrl+D) is pressed in the terminal.
+
+    A daemon thread waits on stdin and raises SIGINT on the process, which
+    uvicorn handles as a clean shutdown (same path as Ctrl+C). Only attached
+    when stdin is a real TTY, so piped / headless runs are unaffected.
+    """
+    if not (sys.stdin and sys.stdin.isatty()):
+        return
+
+    def _watch() -> None:
+        try:
+            sys.stdin.readline()
+        except Exception:
+            return
+        os.kill(os.getpid(), signal.SIGINT)
+
+    threading.Thread(target=_watch, daemon=True).start()
 
 
 def _serve(args: argparse.Namespace) -> int:
@@ -74,10 +97,13 @@ def _serve(args: argparse.Namespace) -> int:
 
     url = f"http://{args.host}:{args.port}"
     print(_paint(f"[*] listening on {url}", _DIM))
-    print(_paint(f"[*] stop it any time with: python -m wifihound stop"
-                 + ("" if args.port == 8000 else f" --port {args.port}"), _DIM))
+    print(_paint("[*] press Enter (or Ctrl+C) here to stop. "
+                 "NetworkManager is restarted on exit.", _DIM))
     if args.debug:
         print(_paint("[*] debug mode: verbose request logging enabled.", _DIM))
+
+    if not args.reload:
+        _install_stdin_quit()
 
     if not args.no_browser:
         try:
@@ -88,7 +114,7 @@ def _serve(args: argparse.Namespace) -> int:
     # Quiet by default: hide per-request access logs and framework chatter.
     # --debug brings them all back.
     uvicorn.run(
-        "wifihound.server:app",
+        "WiFiHound.server:app",
         host=args.host,
         port=args.port,
         reload=args.reload,
@@ -134,7 +160,7 @@ def _add_serve_flags(p: argparse.ArgumentParser) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="wifihound",
+        prog="WiFiHound",
         description="Interactive graph analysis for WiFi recon data.",
     )
     parser.add_argument("--version", action="version",

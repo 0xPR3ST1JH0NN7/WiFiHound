@@ -11,7 +11,7 @@ from typing import Optional
 
 import networkx as nx
 
-from wifihound.models import AccessPoint, Client, Scan
+from WiFiHound.models import AccessPoint, Client, Scan
 
 
 def _is_enterprise(data: dict) -> bool:

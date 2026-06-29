@@ -11,8 +11,8 @@ from __future__ import annotations
 import asyncio
 from typing import Optional
 
-from wifihound.capture.sources import Source
-from wifihound.graph import WifiGraph
+from WiFiHound.capture.sources import Source
+from WiFiHound.graph import WifiGraph
 
 
 def _index(cyto: dict) -> dict:
