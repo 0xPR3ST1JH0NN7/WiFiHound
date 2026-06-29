@@ -37,12 +37,10 @@ missing**:
 | --- | --- | --- |
 | `aircrack-ng`, `airmon-ng`, `airodump-ng`, `aireplay-ng` | the aircrack-ng suite — live capture, monitor mode, deauth | ✅ |
 | `tshark` | handshake detection + RADIUS certificate extraction | ✅ |
-| `wpa_supplicant` | EAP method enumeration | optional |
-| `pcapFilter.sh` | faster RADIUS cert extraction (falls back to `tshark`) | optional |
 | `EAP_buster.sh` | EAP method enumeration (path via `WIFIHOUND_EAP_BUSTER`) | optional |
 
 ```bash
-sudo apt install aircrack-ng tshark wpasupplicant
+sudo apt install aircrack-ng tshark
 ```
 
 Pass `--skip-checks` to bypass the gate for offline-only use (importing and
