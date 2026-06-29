@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -14,8 +15,21 @@ from wifihound.api import router
 WEB_DIR = Path(__file__).parent / "web"
 
 
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    yield
+    # Graceful shutdown (Ctrl+C or the /api/shutdown route): stop any live
+    # capture so airodump-ng is killed and the interface is restored to managed
+    # mode instead of being left in monitor mode.
+    try:
+        from wifihound.api.routes import CAPTURE
+        await CAPTURE.stop()
+    except Exception:
+        pass
+
+
 def create_app() -> FastAPI:
-    app = FastAPI(title="WiFiHound", version=__version__)
+    app = FastAPI(title="WiFiHound", version=__version__, lifespan=_lifespan)
     app.include_router(router)
 
     app.mount(
