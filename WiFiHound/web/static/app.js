@@ -541,15 +541,16 @@ document.getElementById("op-confirm").onclick = () => {
 };
 
 // Pulse a red circular halo while a deauth runs server-side, so it is clear
-// something is happening. A client deauth lights the client and the link to its
-// AP (the deauth targets that association); an AP deauth lights the AP and its
-// links. Returns a stop function that ends the animation and clears the effect.
+// something is happening. A client deauth lights the client, its AP and the link
+// between them (the deauth targets that association); an AP deauth lights the AP
+// and its links. Returns a stop function that ends and clears the effect.
 function startDeauthFx(op) {
   let targets = cy.collection();
   if (op.client) {
     const client = cy.getElementById(op.client);
     const ap = op.bssid ? cy.getElementById(op.bssid) : cy.collection();
     if (client.nonempty()) targets = targets.union(client);
+    if (ap.nonempty()) targets = targets.union(ap);
     if (client.nonempty() && ap.nonempty())
       targets = targets.union(client.edgesWith(ap));
   } else if (op.bssid) {
