@@ -194,7 +194,15 @@ function runLayout(name) {
 function setEmptyState(empty) {
   document.getElementById("empty-state").classList.toggle("hidden", !empty);
   const legend = document.getElementById("graph-legend");
-  if (legend) legend.classList.toggle("hidden", empty);
+  if (legend) {
+    const wasHidden = legend.classList.contains("hidden");
+    legend.classList.toggle("hidden", empty);
+    // Only on the hidden->visible transition (a capture just appeared): show the
+    // overlay fully, then let it fade again. Doing this on every setEmptyState
+    // would re-arm the timer on each live/replay patch (~1.2s < 3s), so it could
+    // never dim during an active capture — the very moment it should get away.
+    if (!empty && wasHidden) { wakeLegend(); armLegendDim(); }
+  }
 }
 
 function renderGraph(payload) {
@@ -480,6 +488,10 @@ document.addEventListener("click", (e) => {
 
 /* ------------------------------------------------------------- operations */
 let pendingOp = null;
+// True while a live EAP enumeration is running: it writes its result into the
+// details panel asynchronously (minutes), so a background tap must not close
+// the panel out from under it.
+let eapRunning = false;
 
 function openDeauthModal(info) {
   // Target an AP directly, or a client off its associated AP.
@@ -622,6 +634,7 @@ async function confirmEap() {
     box.innerHTML = `<p class="hint">Running EAP enumeration on ${escapeHtml(iface)}.
       This can take several minutes…</p>`;
   }
+  eapRunning = !dry;   // a real run streams its result into the panel; keep it open
   try {
     const res = await API.enterpriseEap({
       essid, identity, interface: iface, acknowledged: true, dry_run: dry,
@@ -630,6 +643,8 @@ async function confirmEap() {
   } catch (e) {
     if (box) box.innerHTML = `<p class="hint" style="color:#ffb3ba">${escapeHtml(e.message)}</p>`;
     else toast(e.message, "error");
+  } finally {
+    eapRunning = false;
   }
 }
 
@@ -867,7 +882,13 @@ async function openNode(id) {
 
 cy.on("tap", "node", (evt) => openNode(evt.target.id()));
 cy.on("tap", (evt) => {
-  if (evt.target === cy) cy.elements().removeClass("faded");
+  // Tapping the empty background deselects the focused node: clear any
+  // isolate/highlight fade and close the details panel on the right. Keep the
+  // panel open while a live EAP enumeration is streaming its result into it.
+  if (evt.target === cy) {
+    cy.elements().removeClass("faded");
+    if (!eapRunning) closeDetails();
+  }
 });
 
 document.getElementById("file-input").addEventListener("change", async (e) => {
@@ -918,6 +939,45 @@ document.getElementById("layout-select").onchange = (e) => runLayout(e.target.va
 document.querySelectorAll(".legend-toggle").forEach((btn) =>
   btn.addEventListener("click", () => { btn.classList.toggle("off"); applyFilters(); })
 );
+
+// The filters overlay auto-dims when the pointer has been away for a moment so
+// it stops covering the graph; hovering it (or a fresh capture appearing) brings
+// it back. A collapse button also folds it down to just its title chip.
+const LEGEND_IDLE_MS = 3000;
+let legendDimTimer = null;
+function wakeLegend() {
+  clearTimeout(legendDimTimer);
+  document.getElementById("graph-legend")?.classList.remove("dimmed");
+}
+function armLegendDim() {
+  clearTimeout(legendDimTimer);
+  legendDimTimer = setTimeout(
+    () => document.getElementById("graph-legend")?.classList.add("dimmed"),
+    LEGEND_IDLE_MS
+  );
+}
+const legendEl = document.getElementById("graph-legend");
+if (legendEl) {
+  legendEl.addEventListener("mouseenter", wakeLegend);
+  legendEl.addEventListener("mouseleave", armLegendDim);
+  // Keyboard users get the same treatment: keep it lit while focus is inside it
+  // (e.g. tabbing through the encryption / channel / layout selects).
+  legendEl.addEventListener("focusin", wakeLegend);
+  legendEl.addEventListener("focusout", (e) => {
+    if (!legendEl.contains(e.relatedTarget)) armLegendDim();
+  });
+  armLegendDim(); // fade it out even if the pointer never visits
+}
+const legendCollapseBtn = document.getElementById("legend-collapse");
+if (legendCollapseBtn && legendEl) {
+  legendCollapseBtn.addEventListener("click", () => {
+    const collapsed = legendEl.classList.toggle("collapsed");
+    const label = collapsed ? "Show filters" : "Hide filters";
+    legendCollapseBtn.title = label;
+    legendCollapseBtn.setAttribute("aria-label", label);
+    legendCollapseBtn.setAttribute("aria-expanded", String(!collapsed));
+  });
+}
 
 // Sidebar feature panels behave as an accordion: opening one collapses the
 // others, so a single tool is expanded at a time. (Closing a panel never
