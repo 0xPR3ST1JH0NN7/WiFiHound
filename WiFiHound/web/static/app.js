@@ -195,10 +195,13 @@ function setEmptyState(empty) {
   document.getElementById("empty-state").classList.toggle("hidden", !empty);
   const legend = document.getElementById("graph-legend");
   if (legend) {
+    const wasHidden = legend.classList.contains("hidden");
     legend.classList.toggle("hidden", empty);
-    // When the overlay (re)appears with a capture, show it fully, then let it
-    // fade again after the pointer has stayed away a while.
-    if (!empty) { wakeLegend(); armLegendDim(); }
+    // Only on the hidden->visible transition (a capture just appeared): show the
+    // overlay fully, then let it fade again. Doing this on every setEmptyState
+    // would re-arm the timer on each live/replay patch (~1.2s < 3s), so it could
+    // never dim during an active capture — the very moment it should get away.
+    if (!empty && wasHidden) { wakeLegend(); armLegendDim(); }
   }
 }
 
@@ -485,6 +488,10 @@ document.addEventListener("click", (e) => {
 
 /* ------------------------------------------------------------- operations */
 let pendingOp = null;
+// True while a live EAP enumeration is running: it writes its result into the
+// details panel asynchronously (minutes), so a background tap must not close
+// the panel out from under it.
+let eapRunning = false;
 
 function openDeauthModal(info) {
   // Target an AP directly, or a client off its associated AP.
@@ -627,6 +634,7 @@ async function confirmEap() {
     box.innerHTML = `<p class="hint">Running EAP enumeration on ${escapeHtml(iface)}.
       This can take several minutes…</p>`;
   }
+  eapRunning = !dry;   // a real run streams its result into the panel; keep it open
   try {
     const res = await API.enterpriseEap({
       essid, identity, interface: iface, acknowledged: true, dry_run: dry,
@@ -635,6 +643,8 @@ async function confirmEap() {
   } catch (e) {
     if (box) box.innerHTML = `<p class="hint" style="color:#ffb3ba">${escapeHtml(e.message)}</p>`;
     else toast(e.message, "error");
+  } finally {
+    eapRunning = false;
   }
 }
 
@@ -873,10 +883,11 @@ async function openNode(id) {
 cy.on("tap", "node", (evt) => openNode(evt.target.id()));
 cy.on("tap", (evt) => {
   // Tapping the empty background deselects the focused node: clear any
-  // isolate/highlight fade and close the details panel on the right.
+  // isolate/highlight fade and close the details panel on the right. Keep the
+  // panel open while a live EAP enumeration is streaming its result into it.
   if (evt.target === cy) {
     cy.elements().removeClass("faded");
-    closeDetails();
+    if (!eapRunning) closeDetails();
   }
 });
 

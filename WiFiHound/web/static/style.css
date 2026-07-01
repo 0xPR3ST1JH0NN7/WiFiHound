@@ -287,9 +287,11 @@ code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size
    stops covering the graph; hovering it (JS also clears the class) restores it. */
 .graph-legend.dimmed { opacity: .14; }
 .graph-legend.dimmed:hover { opacity: 1; }
-/* Collapsed: fold down to just the header chip so it takes minimal space. */
+/* Collapsed: fold down to just the header chip so it takes minimal space. The
+   header drops its bottom margin so the folded chip stays vertically balanced. */
 .graph-legend.collapsed { width: auto; }
 .graph-legend.collapsed .legend-content { display: none; }
+.graph-legend.collapsed .legend-header { margin-bottom: 0; }
 .legend-header { display: flex; align-items: center; justify-content: space-between;
   gap: 10px; margin-bottom: 8px; }
 .legend-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
