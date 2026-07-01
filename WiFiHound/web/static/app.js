@@ -891,6 +891,12 @@ cy.on("tap", (evt) => {
   }
 });
 
+// Remember any node the user drags: the live layout then pins it in place (see
+// scheduleLiveLayout) instead of pulling it back on the next discovery. The mark
+// is a plain class, so it clears automatically when the node is removed / the
+// graph is reloaded.
+cy.on("dragfree", "node", (evt) => evt.target.addClass("user-moved"));
+
 document.getElementById("file-input").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -1088,16 +1094,27 @@ function applyPatch(p) {
   if (p.summary) updateStats(p.summary);
   setEmptyState(cy.nodes().length === 0);
   setTimeout(() => cy.nodes(".fresh").removeClass("fresh"), 1600);
-  scheduleLiveLayout();
+  // Only relayout when the graph's shape actually changed (nodes/edges added or
+  // removed). A data-only update (signal, beacons…) must not reshuffle nodes the
+  // user may have arranged by hand.
+  const structural = (p.add && p.add.length) || (p.remove && p.remove.length);
+  if (structural) scheduleLiveLayout();
 }
 
 function scheduleLiveLayout() {
   clearTimeout(live.layoutTimer);
   live.layoutTimer = setTimeout(() => {
+    // Pin every node the user has dragged at its current spot so the force
+    // layout arranges only the rest around them, rather than dragging the whole
+    // graph back to its computed positions each time a node is discovered.
+    const pinned = cy.nodes(".user-moved").map((n) => ({
+      nodeId: n.id(), position: { x: n.position("x"), y: n.position("y") },
+    }));
     const l = cy.layout({
       name: "fcose", animate: true, animationDuration: 500, randomize: false,
       packComponents: true, nodeRepulsion: 16000, idealEdgeLength: 130,
       nodeSeparation: 150, gravity: 0.15, gravityRange: 3.8, fit: false, padding: 60,
+      fixedNodeConstraint: pinned,
     });
     // Fit once, after the first real layout, then leave the view to the user.
     l.one("layoutstop", () => {
@@ -1170,10 +1187,6 @@ async function startLive() {
   if (!iface) return toast("Select a wireless interface", "error");
   const interval = Number(document.getElementById("live-interval").value) || 1.2;
   const channel = document.getElementById("live-channel").value.trim() || null;
-  if (!confirm("Start a real radio capture on " + iface +
-               (channel ? " (channel " + channel + ")" : "") +
-               "?\nThe interface will be switched to monitor mode if needed.\n" +
-               "Authorized testing only: networks you own or may assess.")) return;
   const payload = {
     mode: "airodump",
     interface: iface,
