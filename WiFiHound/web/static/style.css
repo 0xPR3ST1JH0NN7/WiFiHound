@@ -417,6 +417,88 @@ code { background: var(--panel); padding: 1px 5px; border-radius: 4px; font-size
 .legend-filters .filter-row { margin: 8px 0; }
 .legend-hint { color: var(--muted); font-size: 12px; line-height: 1.4;
   margin: 8px 0 0; border-top: 1px solid var(--border); padding-top: 7px; }
+
+/* ------------------------------------------------------------- table view */
+/* A Graph / Table segmented toggle, top-left of the graph area (mirrors the
+   legend at top-right). Table view swaps the canvas for a sortable, searchable
+   list — far easier to read once a capture has too many nodes for the graph. */
+.view-toggle {
+  position: absolute; top: 12px; left: 12px; z-index: 6;
+  display: flex; gap: 2px; padding: 3px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  border: 1px solid var(--border); border-radius: 9px; box-shadow: var(--shadow);
+}
+.vt-btn {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font: inherit; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+  padding: 5px 13px; border-radius: 7px;
+}
+.vt-btn:hover { color: var(--text); }
+.vt-btn.active { background: var(--accent); color: var(--btn-primary-text); font-weight: 600; }
+
+/* The table overlay fills the graph area and sits above the canvas + legend. */
+.table-view {
+  position: absolute; inset: 0; z-index: 5;
+  display: flex; flex-direction: column; background: var(--bg);
+}
+.table-toolbar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 14px 16px 12px 168px;   /* left pad clears the floating view toggle */
+  border-bottom: 1px solid var(--border);
+}
+.table-toolbar input {
+  flex: 0 1 340px; min-width: 160px;
+  padding: 8px 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--panel); color: var(--text); outline: none;
+}
+.table-toolbar input:focus { border-color: var(--accent); }
+.table-hint { color: var(--muted); font-size: 12px; margin-left: auto; }
+.table-scroll { flex: 1; overflow: auto; padding: 4px 16px 28px; }
+.table-section { margin-top: 18px; }
+.table-section > h3 {
+  display: flex; align-items: center; gap: 8px; margin: 0 0 8px;
+  font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--text);
+}
+.table-section > h3 .legend-ico { width: 20px; height: 20px; }
+.table-badge {
+  background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 20px; padding: 1px 9px; font-size: 12px; letter-spacing: 0;
+}
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--panel); color: var(--muted);
+  text-align: left; font-weight: 600; font-size: 11px;
+  text-transform: uppercase; letter-spacing: .5px;
+  padding: 9px 12px; border-bottom: 1px solid var(--border);
+  cursor: pointer; white-space: nowrap; user-select: none;
+}
+.data-table thead th:hover { color: var(--text); }
+.data-table thead th.sorted { color: var(--accent); }
+.data-table thead th .sort-caret { margin-left: 4px; font-size: 10px; opacity: .4; }
+.data-table thead th.sorted .sort-caret { opacity: 1; }
+.data-table th.num, .data-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table tbody td {
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+  white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis;
+}
+.data-table td.mono { font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; }
+.data-table td.muted-cell { color: var(--muted); }
+.data-table tbody tr { cursor: pointer; }
+.data-table tbody tr:hover td { background: var(--panel); }
+.data-table tbody tr.selected td { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.tbl-badge {
+  display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+  padding: 1px 7px; border-radius: 12px; vertical-align: 1px;
+}
+.tbl-badge.ent { background: rgba(167,139,250,.15); color: #a78bfa; margin-left: 6px; }
+.tbl-badge.un { background: rgba(138,147,168,.18); color: var(--client-un); }
+.table-empty { color: var(--muted); font-size: 13px; padding: 10px 12px 0; }
+/* Signal-strength colouring by dBm bucket (closer to 0 = stronger). */
+.sig-strong { color: #34d399; }
+.sig-mid { color: #fbbf24; }
+.sig-weak { color: var(--muted); }
+
 .empty-state {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;

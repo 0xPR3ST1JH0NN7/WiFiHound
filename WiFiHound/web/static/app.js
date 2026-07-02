@@ -193,15 +193,20 @@ function runLayout(name) {
 // there are nodes to read it against.
 function setEmptyState(empty) {
   document.getElementById("empty-state").classList.toggle("hidden", !empty);
+  const toggle = document.getElementById("view-toggle");
+  if (toggle) toggle.classList.toggle("hidden", empty);
+  // No table without data — fall back to the graph so the empty splash shows.
+  if (empty && currentView === "table") setView("graph");
   const legend = document.getElementById("graph-legend");
   if (legend) {
     const wasHidden = legend.classList.contains("hidden");
-    legend.classList.toggle("hidden", empty);
+    const hide = empty || currentView === "table";   // legend is graph-only chrome
+    legend.classList.toggle("hidden", hide);
     // Only on the hidden->visible transition (a capture just appeared): show the
     // overlay fully, then let it fade again. Doing this on every setEmptyState
     // would re-arm the timer on each live/replay patch (~1.2s < 3s), so it could
     // never dim during an active capture — the very moment it should get away.
-    if (!empty && wasHidden) { wakeLegend(); armLegendDim(); }
+    if (!hide && wasHidden) { wakeLegend(); armLegendDim(); }
   }
 }
 
@@ -287,7 +292,187 @@ function applyFilters() {
       n.toggleClass("hidden-node", !show);
     });
   });
+  renderTable();   // keep the table in sync (no-op unless the table view is open)
 }
+
+/* -------------------------------------------------------------- table view */
+// A sortable, searchable table alternative to the node graph — much easier to
+// scan once a capture has too many APs / clients for the graph to stay legible.
+// Rows are read straight from the live Cytoscape model, so the table always
+// matches the graph and follows its live updates. It honours the same legend
+// filters: nodes hidden by a filter (.hidden-node) are omitted here too.
+let currentView = "graph";
+const tableSort = {
+  ap: { key: "degree", dir: "desc" },     // busiest APs first by default
+  client: { key: "power", dir: "desc" },  // strongest clients first
+};
+
+// The AP a client is associated to, taken from its graph edge (live-accurate).
+function clientAssocAp(n) {
+  const ap = n.neighborhood('node[kind = "ap"]').first();
+  return ap.nonempty() ? ap : null;
+}
+
+// Sort helpers: missing numbers always sink to the bottom, either direction.
+function numOr(v) { const n = Number(v); return Number.isFinite(n) ? n : NaN; }
+function cellOr(v) {
+  return v === null || v === undefined || v === "" ? "—" : escapeHtml(String(v));
+}
+function sigCell(p) {
+  if (p === null || p === undefined || p === "") return '<span class="muted-cell">—</span>';
+  const dbm = Number(p);
+  const cls = dbm >= -60 ? "sig-strong" : dbm >= -75 ? "sig-mid" : "sig-weak";
+  return `<span class="${cls}">${escapeHtml(String(dbm))} dBm</span>`;
+}
+
+const AP_COLUMNS = [
+  { key: "label", label: "ESSID",
+    val: (n) => (n.data("label") || "").toLowerCase(),
+    render: (n) => {
+      const hidden = !n.data("essid");
+      return `<span class="${hidden ? "muted-cell" : ""}">${escapeHtml(n.data("label") || "—")}</span>`;
+    } },
+  { key: "id", label: "BSSID", cls: "mono",
+    val: (n) => n.id(), render: (n) => escapeHtml(n.id()) },
+  { key: "channel", label: "Ch", cls: "num",
+    val: (n) => numOr(n.data("channel")), render: (n) => cellOr(n.data("channel")) },
+  { key: "privacy", label: "Encryption",
+    val: (n) => (n.data("privacy") || "").toLowerCase(),
+    render: (n) => cellOr(n.data("privacy")) +
+      (n.data("enterprise") ? ' <span class="tbl-badge ent">802.1X</span>' : "") },
+  { key: "power", label: "Signal", cls: "num",
+    val: (n) => numOr(n.data("power")), render: (n) => sigCell(n.data("power")) },
+  { key: "degree", label: "Clients", cls: "num",
+    val: (n) => n.degree(false), render: (n) => String(n.degree(false)) },
+  { key: "vendor", label: "Vendor", cls: "muted-cell",
+    val: (n) => (n.data("vendor") || "").toLowerCase(),
+    render: (n) => cellOr(n.data("vendor")) },
+];
+
+const CLIENT_COLUMNS = [
+  { key: "id", label: "MAC", cls: "mono",
+    val: (n) => n.id(), render: (n) => escapeHtml(n.id()) },
+  { key: "assoc", label: "Associated AP",
+    val: (n) => { const ap = clientAssocAp(n); return ap ? (ap.data("label") || ap.id()).toLowerCase() : "~"; },
+    render: (n) => {
+      const ap = clientAssocAp(n);
+      return ap ? escapeHtml(ap.data("label") || ap.id())
+                : '<span class="tbl-badge un">unassociated</span>';
+    } },
+  { key: "power", label: "Signal", cls: "num",
+    val: (n) => numOr(n.data("power")), render: (n) => sigCell(n.data("power")) },
+  { key: "vendor", label: "Vendor", cls: "muted-cell",
+    val: (n) => (n.data("vendor") || "").toLowerCase(),
+    render: (n) => cellOr(n.data("vendor")) },
+];
+
+function tableFilterText() {
+  return (document.getElementById("table-search").value || "").trim().toLowerCase();
+}
+
+function nodeMatchesText(n, q) {
+  if (!q) return true;
+  const hay = [n.id(), n.data("label"), n.data("privacy"), n.data("vendor"), n.data("channel")];
+  const ap = n.data("kind") === "client" ? clientAssocAp(n) : null;
+  if (ap) hay.push(ap.data("label"), ap.id());
+  return hay.some((h) => h && String(h).toLowerCase().includes(q));
+}
+
+function sortNodes(nodes, cols, state) {
+  const col = cols.find((c) => c.key === state.key) || cols[0];
+  const dir = state.dir === "asc" ? 1 : -1;
+  return nodes.sort((a, b) => {
+    const va = col.val(a), vb = col.val(b);
+    if (typeof va === "number" && typeof vb === "number") {
+      const aNan = Number.isNaN(va), bNan = Number.isNaN(vb);
+      if (aNan && bNan) return 0;
+      if (aNan) return 1;                 // missing values always last
+      if (bNan) return -1;
+      return (va - vb) * dir;
+    }
+    return String(va).localeCompare(String(vb), undefined, { numeric: true }) * dir;
+  });
+}
+
+function renderOneTable(kind, cols, state, tableId, countId, emptyId) {
+  const q = tableFilterText();
+  const nodes = cy.nodes(`[kind = "${kind}"]`)
+    .filter((n) => !n.hasClass("hidden-node") && nodeMatchesText(n, q))
+    .toArray();
+  sortNodes(nodes, cols, state);
+
+  const table = document.getElementById(tableId);
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+
+  thead.innerHTML = "<tr>" + cols.map((c) => {
+    const on = state.key === c.key;
+    const caret = on ? (state.dir === "asc" ? "▲" : "▼") : "▾";
+    const cls = [c.cls || "", on ? "sorted" : ""].join(" ").trim();
+    return `<th data-key="${c.key}" class="${cls}">${escapeHtml(c.label)}` +
+           `<span class="sort-caret">${caret}</span></th>`;
+  }).join("") + "</tr>";
+
+  tbody.innerHTML = nodes.map((n) => {
+    const sel = n.selected() ? " selected" : "";
+    return `<tr data-id="${escapeHtml(n.id())}" class="${sel.trim()}">` +
+      cols.map((c) => `<td class="${c.cls || ""}">${c.render(n)}</td>`).join("") + "</tr>";
+  }).join("");
+
+  document.getElementById(countId).textContent = String(nodes.length);
+  document.getElementById(emptyId).classList.toggle("hidden", nodes.length > 0);
+
+  thead.querySelectorAll("th").forEach((th) => {
+    th.onclick = () => {
+      const key = th.getAttribute("data-key");
+      if (state.key === key) state.dir = state.dir === "asc" ? "desc" : "asc";
+      else { state.key = key; state.dir = "desc"; }
+      renderTable();
+    };
+  });
+  tbody.querySelectorAll("tr").forEach((tr) => {
+    tr.onclick = () => {
+      const id = tr.getAttribute("data-id");
+      cy.$(":selected").unselect();
+      const node = cy.getElementById(id);
+      if (node.nonempty()) node.select();
+      document.querySelectorAll("#table-view tr.selected").forEach((r) => r.classList.remove("selected"));
+      tr.classList.add("selected");
+      openNode(id);
+    };
+  });
+}
+
+function renderTable() {
+  if (currentView !== "table") return;
+  const scroll = document.querySelector(".table-scroll");
+  const top = scroll ? scroll.scrollTop : 0;
+  renderOneTable("ap", AP_COLUMNS, tableSort.ap, "ap-table", "tbl-ap-count", "ap-empty");
+  renderOneTable("client", CLIENT_COLUMNS, tableSort.client, "client-table", "tbl-client-count", "client-empty");
+  if (scroll) scroll.scrollTop = top;   // preserve scroll across live re-renders
+}
+
+function setView(view) {
+  currentView = view === "table" ? "table" : "graph";
+  const isTable = currentView === "table";
+  document.getElementById("table-view").classList.toggle("hidden", !isTable);
+  document.querySelectorAll(".vt-btn").forEach((b) =>
+    b.classList.toggle("active", b.dataset.view === currentView));
+  // The legend is graph-only chrome; hide it while the table is up.
+  const empty = cy.nodes().length === 0;
+  const legend = document.getElementById("graph-legend");
+  if (legend) {
+    legend.classList.toggle("hidden", empty || isTable);
+    // Returning to the graph re-lights the overlay, then lets it idle-dim again.
+    if (!isTable && !empty) { wakeLegend(); armLegendDim(); }
+  }
+  if (isTable) renderTable();
+  else requestAnimationFrame(() => cy.resize());
+}
+
+document.querySelectorAll(".vt-btn").forEach((b) =>
+  b.addEventListener("click", () => setView(b.dataset.view)));
+document.getElementById("table-search").addEventListener("input", renderTable);
 
 /* ----------------------------------------------------------------- details */
 function showDetails(info) {
