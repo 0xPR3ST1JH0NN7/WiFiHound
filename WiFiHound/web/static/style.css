@@ -135,15 +135,14 @@ body { font-size: 14px; }   /* design baseline; the size setting zooms the whole
    cat gets a long road; the cat pins left (near search), the key pins right.
    Decorative — hidden on narrow screens and when reduced motion is preferred. */
 .cat-runner {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
   height: 40px;
   position: relative;
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;   /* cat pinned left, key pinned right */
-  gap: 12px;
-  padding: 0 8px 5px;
+  gap: 9px;                         /* keep the cat right on the key's tail */
+  /* extra left padding = a few more road dashes behind the cat to run over */
+  padding: 0 6px 5px 56px;
   overflow: hidden;
   user-select: none;
   pointer-events: none;             /* purely decorative; never eats clicks */
@@ -185,7 +184,7 @@ body { font-size: 14px; }   /* design baseline; the size setting zooms the whole
 
 /* little speed puffs trailing the cat */
 .cat-dust {
-  position: absolute; left: 6px; bottom: 8px; width: 8px; height: 2px; color: var(--accent);
+  position: absolute; left: 48px; bottom: 8px; width: 8px; height: 2px; color: var(--accent);
 }
 .cat-dust::before, .cat-dust::after {
   content: ""; position: absolute; height: 2px; background: currentColor; opacity: 0;
